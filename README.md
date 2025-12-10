@@ -57,7 +57,7 @@
 # C. Pemeriksaan Status Deployment
 + kubectl get pods
 + kubectl get svc
-
++ kubectl create secret generic main-service-secret --from-env-file=.env
 ---
 
 ### III. PENGUJIAN (TESTING)
