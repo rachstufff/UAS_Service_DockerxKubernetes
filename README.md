@@ -1,6 +1,10 @@
 ####################################################################
 #    RINGKASAN ALUR KERJA DEPLOYMENT DAN PENGUJIAN SOA (MICROSERVICE)
 ####################################################################
+*Note: Buat dahulu file .env dengan credential anda
++ GOOGLE_CLIENT_ID=xxx.apps.googleusercontent.com
++ GOOGLE_CLIENT_SECRET=GOCSPX-xxxxxxxxxxxxxxxx
++ GOOGLE_CALLBACK_URL=http://localhost:30000/auth/google/callback
 
 ### I. PEMBUATAN DAN PENERBITAN IMAGE DOCKER (BUILD & PUSH)
 #
