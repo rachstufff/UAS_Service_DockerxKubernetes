@@ -1,7 +1,6 @@
 // dummy environment variables untuk testing
-process.env.GOOGLE_CLIENT_ID =
-  "491084983649-co442qjmr9v87sckt8c5sqhubque2hqu.apps.googleusercontent.com";
-process.env.GOOGLE_CLIENT_SECRET = "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";
+process.env.GOOGLE_CLIENT_ID = "xxx.apps.googleusercontent.com";
+process.env.GOOGLE_CLIENT_SECRET = "GOCSPX-xxxxxxxxxxxxxxxx";
 process.env.GOOGLE_CALLBACK_URL = "http://localhost:30000/auth/google/callback";
 process.env.JWT_SECRET = "dummy-secret-key";
 
