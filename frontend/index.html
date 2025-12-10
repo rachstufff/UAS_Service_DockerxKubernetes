@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sistem Estimasi Pengiriman (SOA)</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-light">
+    <div class="container mt-5">
+      <h2 class="text-center mb-4">Smart Delivery System</h2>
+
+      <div id="alertBox" class="alert d-none"></div>
+
+      <div
+        id="loginSection"
+        class="card p-4 mx-auto shadow"
+        style="max-width: 400px"
+      >
+        <h4 class="text-center mb-3">Login Pengguna</h4>
+
+        <div class="mb-3">
+          <input
+            type="text"
+            id="username"
+            class="form-control"
+            placeholder="Masukkan Username / Email"
+          />
+        </div>
+        <div class="mb-3">
+          <input
+            type="password"
+            id="password"
+            class="form-control"
+            placeholder="Masukkan Password"
+          />
+        </div>
+
+        <button onclick="loginManual()" class="btn btn-primary w-100 mb-2">
+          Login
+        </button>
+
+        <div class="text-center my-2 text-muted">- ATAU -</div>
+
+        <a
+          href="http://localhost:30000/auth/google"
+          class="btn btn-danger w-100"
+        >
+          <i class="bi bi-google"></i> Login via Google
+        </a>
+      </div>
+
+      <div id="dashboardSection" class="d-none">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <button onclick="logout()" class="btn btn-outline-danger btn-sm">
+            Keluar
+          </button>
+        </div>
+
+        <div class="row justify-content-center">
+          <div class="col-md-8">
+            <div class="card p-4 shadow-sm border-0">
+              <div class="text-center mb-4">
+                <h5>Cek Estimasi Waktu Pengiriman (AI)</h5>
+                <p class="text-muted small">
+                  Masukkan jarak dan berat paket untuk mendapatkan prediksi
+                  waktu.
+                </p>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Jarak Tempuh (KM)</label>
+                  <input
+                    type="number"
+                    id="jarak"
+                    class="form-control form-control-lg"
+                    placeholder="0"
+                  />
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label fw-bold">Berat Barang (KG)</label>
+                  <input
+                    type="number"
+                    id="berat"
+                    class="form-control form-control-lg"
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+
+              <div class="mt-4">
+                <button
+                  onclick="predict()"
+                  id="btnPredict"
+                  class="btn btn-success w-100 py-2 fs-5"
+                >
+                  Hitung Estimasi
+                </button>
+              </div>
+
+              <div
+                id="hasilPrediksi"
+                class="mt-4 p-3 border rounded d-none text-center bg-light"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let token = localStorage.getItem("soa_token");
+
+      // Cek status login saat halaman dimuat
+      window.onload = function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tokenFromUrl = urlParams.get("token");
+        const errorFromUrl = urlParams.get("error");
+
+        // Handle redirect dari Google Login
+        if (errorFromUrl) {
+          showAlert(
+            "danger",
+            "Login Gagal: " + decodeURIComponent(errorFromUrl)
+          );
+          window.history.replaceState({}, document.title, "/");
+        } else if (tokenFromUrl) {
+          token = tokenFromUrl;
+          localStorage.setItem("soa_token", token);
+          showAlert("success", "Login Google Berhasil!");
+          window.history.replaceState({}, document.title, "/");
+        }
+
+        checkLoginState();
+      };
+
+      function checkLoginState() {
+        if (token) {
+          document.getElementById("loginSection").classList.add("d-none");
+          document
+            .getElementById("dashboardSection")
+            .classList.remove("d-none");
+        } else {
+          document.getElementById("loginSection").classList.remove("d-none");
+          document.getElementById("dashboardSection").classList.add("d-none");
+        }
+      }
+
+      async function loginManual() {
+        const user = document.getElementById("username").value;
+        const pass = document.getElementById("password").value;
+
+        if (!user || !pass)
+          return showAlert("warning", "Username dan Password harus diisi!");
+
+        try {
+          // Request ke Gateway port 3000
+          const res = await fetch("http://localhost:30000/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username: user, password: pass }),
+          });
+          const data = await res.json();
+
+          if (res.ok) {
+            token = data.token;
+            localStorage.setItem("soa_token", token);
+            checkLoginState();
+          } else {
+            showAlert("danger", data.message || "Login Gagal");
+          }
+        } catch (err) {
+          showAlert("danger", "Gagal koneksi ke Server Gateway");
+        }
+      }
+
+      async function predict() {
+        const jarakInput = document.getElementById("jarak");
+        const beratInput = document.getElementById("berat");
+        const btnPredict = document.getElementById("btnPredict");
+        const hasilDiv = document.getElementById("hasilPrediksi");
+
+        const jarak = jarakInput.value;
+        const berat = beratInput.value;
+
+        if (!jarak || !berat) {
+          return showAlert("warning", "Harap isi Jarak dan Berat!");
+        }
+
+        // 1. UI Loading State
+        btnPredict.disabled = true;
+        btnPredict.innerText = "Sedang Menghitung...";
+        hasilDiv.classList.remove("d-none", "alert-success", "alert-danger");
+        hasilDiv.classList.add("alert-warning");
+        hasilDiv.innerHTML = "<em>Memproses data ke AI Service...</em>";
+
+        try {
+          // Request ke Gateway port 3000 (Wajib Token)
+          const res = await fetch("http://localhost:30000/ai/predict", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              jarak: parseFloat(jarak),
+              berat: parseFloat(berat),
+            }),
+          });
+
+          // Handle jika token expired
+          if (res.status === 401 || res.status === 403) {
+            logout();
+            return showAlert("danger", "Sesi habis, silakan login lagi.");
+          }
+
+          const data = await res.json();
+
+          // 2. Tampilkan Hasil
+          hasilDiv.classList.remove("alert-warning");
+          hasilDiv.classList.add("alert-success");
+          hasilDiv.innerHTML = `
+                <h4 class="text-success fw-bold">${data.estimasi_hari} Hari</h4>
+            `;
+
+          // 3. Reset Form agar bisa input lagi
+          jarakInput.value = "";
+          beratInput.value = "";
+          jarakInput.focus(); // Fokus kembali ke input pertama
+        } catch (err) {
+          console.error(err);
+          hasilDiv.classList.remove("alert-warning");
+          hasilDiv.classList.add("alert-danger");
+          hasilDiv.innerText = "Gagal menghubungi server AI.";
+        } finally {
+          // Kembalikan Tombol
+          btnPredict.disabled = false;
+          btnPredict.innerText = "Hitung Estimasi";
+        }
+      }
+
+      function logout() {
+        token = null;
+        localStorage.removeItem("soa_token");
+        checkLoginState();
+        showAlert("info", "Anda telah logout.");
+      }
+
+      function showAlert(type, msg) {
+        const alert = document.getElementById("alertBox");
+        alert.className = `alert alert-${type} text-center`;
+        alert.innerText = msg;
+        alert.classList.remove("d-none");
+        // Auto hide alert setelah 3 detik
+        setTimeout(() => alert.classList.add("d-none"), 3000);
+      }
+    </script>
+  </body>
+</html>

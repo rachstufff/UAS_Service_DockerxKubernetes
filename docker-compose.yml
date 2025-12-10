@@ -1,0 +1,95 @@
+services:
+  # Renamed to match K8s naming convention (dash instead of underscore)
+  mysql-db: 
+    image: mysql:8.0
+    container_name: mysql_container
+    env_file:
+      - .env 
+    ports:
+      - "3307:3306" 
+    networks:
+      - soa-network
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+
+  # Renamed to match K8s
+  main-service:
+    build: ./main_service
+    container_name: main_container
+    env_file:
+      - .env
+    depends_on:
+      mysql-db: # Updated reference
+        condition: service_healthy
+      rabbitmq-server: # ADDED: Wait for RabbitMQ to be healthy
+        condition: service_healthy
+    networks:
+      - soa-network
+
+  # Renamed to match K8s
+  gateway:
+    build: ./gateway
+    container_name: gateway_container
+    env_file:
+      - .env
+    ports:
+      - "30000:3000"
+    networks:
+      - soa-network
+    depends_on:
+      - main-service # Updated reference
+      - ai-service   # Updated reference
+
+  # Renamed to match K8s
+  ai-service:
+    build: ./ai_service
+    container_name: ai_container
+    networks:
+      - soa-network
+
+  frontend:
+    build: ./frontend
+    container_name: frontend_container
+    ports:
+      - "9090:80"
+    networks:
+      - soa-network
+
+  # CRITICAL FIX: Renamed from rabbitmq_server to rabbitmq-server
+  rabbitmq-server:
+    image: rabbitmq:3-management
+    container_name: rabbitmq_container
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - soa-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Renamed to match K8s (optional, but good for consistency)
+  logging-service:
+    build: ./logging_service
+    container_name: logging_container
+    depends_on:
+      rabbitmq-server: # Updated reference
+        condition: service_healthy
+    networks:
+      - soa-network
+    volumes:
+      - ./logs_data:/app/logs
+
+networks:
+  soa-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local

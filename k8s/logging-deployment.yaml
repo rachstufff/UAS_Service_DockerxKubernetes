@@ -1,0 +1,40 @@
+# 1. Definisi Claim Volume (PVC)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: logs-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+---
+# 2. Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logging-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logging-service
+  template:
+    metadata:
+      labels:
+        app: logging-service
+    spec:
+      containers:
+        - name: logging-service
+          image: rachstufff/soa-logging:v1
+          env:
+            - name: RABBITMQ_URL
+              value: "amqp://rabbitmq-server"
+          volumeMounts:
+            - name: log-storage
+              mountPath: /app/logs
+      volumes:
+        - name: log-storage
+          persistentVolumeClaim:
+            claimName: logs-pvc

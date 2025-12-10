@@ -1,0 +1,274 @@
+openapi: 3.0.0
+info:
+  title: Smart Delivery System - SOA API
+  version: 1.0.0
+  description: >
+    Dokumentasi API untuk sistem estimasi waktu pengiriman berbasis
+    arsitektur microservices (Gateway, Main Service, AI Service).
+
+servers:
+  - url: http://localhost:3000
+    description: API Gateway (pintu utama semua request)
+
+paths:
+  /auth/register:
+    post:
+      summary: Register user baru (manual)
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  example: "123456"
+      responses:
+        '201':
+          description: User berhasil dibuat
+        '400':
+          description: Username sudah digunakan / terdaftar via Google
+        '500':
+          description: Error server / database
+
+  /auth/login:
+    post:
+      summary: Login user manual, menghasilkan JWT
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  example: user@example.com
+                password:
+                  type: string
+                  example: "123456"
+      responses:
+        '200':
+          description: Login berhasil, mengembalikan token JWT
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  auth:
+                    type: boolean
+                    example: true
+                  token:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        '401':
+          description: Password salah
+        '403':
+          description: Email terdaftar via Google (harus login Google)
+        '404':
+          description: User tidak ditemukan
+        '500':
+          description: Error server
+
+  /auth/google:
+    get:
+      summary: Redirect ke Google OAuth
+      tags: [Auth]
+      responses:
+        '302':
+          description: Redirect ke Google
+
+  /api/barang:
+    get:
+      summary: Ambil daftar semua barang
+      tags: [Barang]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Daftar barang
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                    nama_barang:
+                      type: string
+                    berat_kg:
+                      type: number
+                    jarak_km:
+                      type: number
+                    jenis_kendaraan:
+                      type: string
+        '401':
+          description: Token tidak ada / tidak valid
+
+    post:
+      summary: Tambah barang baru
+      tags: [Barang]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nama_barang, berat_kg, jarak_km, jenis_kendaraan]
+              properties:
+                nama_barang:
+                  type: string
+                  example: Laptop
+                berat_kg:
+                  type: number
+                  example: 2
+                jarak_km:
+                  type: number
+                  example: 15
+                jenis_kendaraan:
+                  type: string
+                  example: Motor
+      responses:
+        '201':
+          description: Barang berhasil ditambahkan
+        '401':
+          description: Token tidak valid
+        '500':
+          description: Error server
+
+  /api/barang/{id}:
+    put:
+      summary: Update data barang
+      tags: [Barang]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+          description: ID barang
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nama_barang, berat_kg, jarak_km]
+              properties:
+                nama_barang:
+                  type: string
+                berat_kg:
+                  type: number
+                jarak_km:
+                  type: number
+      responses:
+        '200':
+          description: Barang berhasil diupdate
+        '500':
+          description: Error server
+
+    delete:
+      summary: Hapus barang
+      tags: [Barang]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Barang berhasil dihapus
+        '500':
+          description: Error server
+
+  /ai/predict:
+    post:
+      summary: Prediksi estimasi hari pengiriman (AI Service)
+      tags: [AI]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jarak, berat]
+              properties:
+                jarak:
+                  type: number
+                  example: 20
+                berat:
+                  type: number
+                  example: 5
+      responses:
+        '200':
+          description: Estimasi hari berhasil dihitung
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: success
+                  estimasi_hari:
+                    type: integer
+                    example: 2
+        '401':
+          description: Token invalid
+        '500':
+          description: Error server
+
+  /ai/train:
+    post:
+      summary: Menambahkan data baru & retrain model AI
+      tags: [AI]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jarak, berat, waktu_aktual_hari]
+              properties:
+                jarak:
+                  type: number
+                  example: 10
+                berat:
+                  type: number
+                  example: 3
+                waktu_aktual_hari:
+                  type: integer
+                  example: 2
+      responses:
+        '200':
+          description: Model berhasil retrain
+        '500':
+          description: Error server
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

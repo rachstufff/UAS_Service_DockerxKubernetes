@@ -1,0 +1,21 @@
+{
+  "name": "api-gateway",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "jest --detectOpenHandles --forceExit"
+  },
+  "dependencies": {
+    "amqplib": "^0.10.9",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-rate-limit": "^7.1.5",
+    "http-proxy-middleware": "^2.0.6",
+    "jsonwebtoken": "^9.0.3"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4"
+  }
+}
