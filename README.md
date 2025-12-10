@@ -81,3 +81,4 @@
 # Build image k6 dengan script load test Anda
 + docker build -t k6-loadtest:v1 -f Dockerfile.k6 .
 # Jalankan load test (Menggunakan --network host untuk mengakses K8s NodePort)
+docker run --network host k6-loadtest:v1 run loadtest_ai.js
