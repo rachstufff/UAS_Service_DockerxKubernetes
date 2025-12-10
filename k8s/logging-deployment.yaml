@@ -27,7 +27,7 @@ spec:
     spec:
       containers:
         - name: logging-service
-          image: rachstufff/soa-logging:v1
+          image: username_docker/soa-logging:v1
           env:
             - name: RABBITMQ_URL
               value: "amqp://rabbitmq-server"

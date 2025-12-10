@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: ai-service
-          image: rachstufff/soa-ai:v1
+          image: username_docker/soa-ai:v1
           ports:
             - containerPort: 5000
 ---

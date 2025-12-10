@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: rachstufff/soa-frontend:v1
+          image: username_docker/soa-frontend:v1
           ports:
             - containerPort: 80
 ---

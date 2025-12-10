@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: main-service
-          image: rachstufff/soa-main:v1
+          image: username_docker/soa-main:v1
           env:
             - name: JWT_SECRET
               value: "rahasia"
